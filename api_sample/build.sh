@@ -8,10 +8,12 @@ cd ${DIR}
 # diretory create for build
 if [ ! -d "bin" ]; then
   mkdir bin
+  echo "make bin directory.."
 fi
 
 if [ ! -d "pkg" ]; then
   mkdir pkg
+  echo "make pkg directory.."
 fi
 
 # build parameter
@@ -22,7 +24,10 @@ INSTALL_DIR="${PJ_DIR}/src/main"
 export GOPATH=${PJ_DIR}
 
 cd ${INSTALL_DIR}
+echo "packaging now..."
 go install
+
+echo "build package successfully!!"
 
 # recommend server setting
 # export PATH=$PATH:$GOPATH/bin
