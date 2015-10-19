@@ -1,6 +1,67 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/ant0ine/go-json-rest/rest"
+)
+
+type TestInput struct {
+	Name string
+	Age  int
+}
+
+type TestOutput struct {
+	Name string
+	Age  int
+}
+
+func test(w rest.ResponseWriter, r *rest.Request) {
+	input := TestInput{}
+	r.DecodeJsonPayload(&input)
+	fmt.Println(input)
+	output := TestOutput{}
+
+	output.Name = input.Name + "さん"
+	output.Age = input.Age
+	w.WriteJson(output)
+}
+
+func main() {
+	api := rest.NewApi()
+	api.Use(rest.DefaultDevStack...)
+
+	/*
+		api.Use(&rest.CorsMiddleware{
+			RejectNonCorsRequests: false,
+			OriginValidator: func(origin string, request *rest.Request) bool {
+				return true
+			},
+			AllowedMethods: []string{"GET", "POST", "PUT"},
+			AllowedHeaders: []string{
+				"Accept", "Content-Type", "X-Custom-Header", "Origin"},
+			AccessControlAllowCredentials: true,
+			AccessControlMaxAge:           3600,
+		})
+	*/
+	router, err := rest.MakeRouter(
+		rest.Post("/test", test),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	api.SetApp(router)
+	log.Fatal(http.ListenAndServe(":9999", api.MakeHandler()))
+}
+
+/*
+package main
+
+import (
 	"database/sql"
 	"fmt"
 	"html"
@@ -69,3 +130,4 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 
 }
+*/
