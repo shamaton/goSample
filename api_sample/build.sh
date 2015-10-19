@@ -21,7 +21,7 @@ PJ_DIR=`pwd`
 INSTALL_DIR="${PJ_DIR}/src/main"
 
 # build
-export GOPATH=${PJ_DIR}
+export GOPATH=$GOPATH:${PJ_DIR}
 
 cd ${INSTALL_DIR}
 echo "packaging now..."
