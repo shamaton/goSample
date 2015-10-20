@@ -50,6 +50,7 @@ func main() {
 		rest.Post("/test", test),
 	)
 
+	// 存在しないルート時
 	if err != nil {
 		log.Fatal(err)
 	}
