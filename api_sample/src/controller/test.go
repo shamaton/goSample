@@ -2,20 +2,14 @@ package controller
 
 import (
 	"log"
+	"model"
+
+	"gopkg.in/gorp.v1"
 
 	"golang.org/x/net/context"
 
-	sql_builder "github.com/Masterminds/squirrel"
 	"github.com/ant0ine/go-json-rest/rest" // sql_builderとして扱う
-	"gopkg.in/gorp.v1"
 )
-
-type User struct {
-	Id    int32
-	Name  string
-	Score int32
-	//Hoge int32   //`db:"score, [primarykey, autoincrement]"` 変数名とカラム名が異なる場合JSON的に書ける
-}
 
 func Test(w rest.ResponseWriter, r *rest.Request /*ctx context.Context*/) {
 	log.Println("hogehogfukga")
@@ -23,60 +17,28 @@ func Test(w rest.ResponseWriter, r *rest.Request /*ctx context.Context*/) {
 	ctx := r.Env["context"].(context.Context)
 	str := ctx.Value("test").(string)
 	log.Println(str)
+
 	db := ctx.Value("DB").(*gorp.DbMap)
+	db.AddTableWithName(model.User{}, "users").SetKeys(false, "Id") // これがないと無理
 
 	// データをselect
-	user := selectTest(db)
+	user := model.Find(ctx, db, 3)
 	log.Println(user)
-
-	w.WriteJson(user)
+	log.Println("fjdksal;gjidopajio")
 
 	// データをupdate : for updateで呼ぶべき
-	/*
-	  user.Score += 1
-	  log.Println(user)
-	  tx, errr := dbmap.Begin()
-	  checkErr(errr, "tx error!")
-	  res, e := tx.Update(&user)
-	  log.Println(res)
-	  checkErr(e, "")
-	  ee := tx.Commit()
-	  checkErr(ee, "commit error!!")
+	user.Score += 1
+	log.Println(user)
+	tx, errr := db.Begin()
+	checkErr(errr, "tx error!")
+	res, e := tx.Update(&user)
+	log.Println(res)
+	checkErr(e, "")
+	ee := tx.Commit()
+	checkErr(ee, "commit error!!")
 
-	  tx.Commit()
-	*/
-}
-
-func selectTest(dbmap *gorp.DbMap) User {
-
-	// パターン 1
-	dbmap.AddTableWithName(User{}, "users").SetKeys(false, "Id")
-	obj, err := dbmap.Get(User{}, 1)
-	checkErr(err, "not found data!")
-
-	u := obj.(*User)
-	log.Printf("id : %d, name %s, score %d", u.Id, u.Name, u.Score)
-
-	// パターン 2 (こちらの場合はSQLを書くのでAddTable不要)
-	var user User // user := User{}
-	err2 := dbmap.SelectOne(&user, "select * from users where id = 2")
-	checkErr(err2, "not found data!")
-	log.Printf("id : %d, name %s, score %d", user.Id, user.Name, user.Score)
-
-	// パターン 3 (squirrelでSQL生成)
-	sb := sql_builder.Select("*").From("users")
-	sb = sb.Where(sql_builder.Eq{"id": 3})
-	sql, args, sql_err := sb.ToSql()
-	log.Println(sql)
-
-	checkErr(sql_err, "SQL error!!")
-
-	var user3 User // user := User{}
-	err3 := dbmap.SelectOne(&user3, sql, args[0])
-	checkErr(err3, "not found data!")
-	log.Printf("id : %d, name %s, score %d", user3.Id, user3.Name, user3.Score)
-
-	return user3
+	tx.Commit()
+	w.WriteJson(user)
 }
 
 // エラー表示
