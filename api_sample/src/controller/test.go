@@ -23,7 +23,7 @@ func Test(w rest.ResponseWriter, r *rest.Request /*ctx context.Context*/) {
 
 	// データをselect
 	user := model.Find(ctx, db, 3)
-	log.Println(user)
+	user.Hoge()
 	log.Println("fjdksal;gjidopajio")
 
 	// データをupdate : for updateで呼ぶべき

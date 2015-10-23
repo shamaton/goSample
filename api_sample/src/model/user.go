@@ -15,16 +15,27 @@ type User struct {
 	//Hoge int32   //`db:"score, [primarykey, autoincrement]"` 変数名とカラム名が異なる場合JSON的に書ける
 }
 
+type baseModel struct {
+	*User
+	*Base
+}
+
 func Find(ctx context.Context, db *gorp.DbMap, userId int) User {
 	//db := ctx.Value("DB").(*gorp.DbMap)
+	var test baseModel
+	//test.SetText("test text")
+	test.Hoge()
 
 	// データをselect
 	var user User // user := User{}
 	err := db.SelectOne(&user, "select * from users where id = ?", userId)
 	checkErr(err, "not found data!")
-
 	return user
 
+}
+
+func (u *User) Hoge() {
+	log.Println("hogeeeeeeeeeeeee")
 }
 
 // データをupdate : for updateで呼ぶべき
