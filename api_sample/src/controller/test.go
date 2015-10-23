@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 	"model"
 
@@ -8,7 +9,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/ant0ine/go-json-rest/rest" // sql_builderとして扱う
+	"github.com/ant0ine/go-json-rest/rest"
+	"github.com/garyburd/redigo/redis"
+	// sql_builderとして扱う
 )
 
 func Test(w rest.ResponseWriter, r *rest.Request /*ctx context.Context*/) {
@@ -24,7 +27,20 @@ func Test(w rest.ResponseWriter, r *rest.Request /*ctx context.Context*/) {
 	// データをselect
 	user := model.Find(ctx, db, 3)
 	user.Hoge()
-	log.Println("fjdksal;gjidopajio")
+
+	// use redis
+	redis_pool := ctx.Value("redis").(*redis.Pool)
+	redis_conn := redis_pool.Get()
+
+	_, e2 := redis_conn.Do("SET", "message", "this is value")
+	if e2 != nil {
+		log.Fatalln("set message", e2)
+	}
+	s, err := redis.String(redis_conn.Do("GET", "message"))
+	if err != nil {
+		log.Fatalln("get message", err)
+	}
+	fmt.Printf("%#v\n", s)
 
 	// データをupdate : for updateで呼ぶべき
 	user.Score += 1

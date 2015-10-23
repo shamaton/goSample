@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/ant0ine/go-json-rest/rest"
+	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/gorp.v1"
 )
@@ -43,6 +45,32 @@ func initDb() *gorp.DbMap {
 	return dbmap
 }
 
+// redis ConnectionPooling
+func newPool() *redis.Pool {
+	hostname := "127.0.0.1"
+	port := "6379"
+
+	return &redis.Pool{
+
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", hostname+":"+port)
+
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
+
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+}
+
 func baseHandlerFunc(handler func(w rest.ResponseWriter, r *rest.Request)) rest.HandlerFunc {
 	return baseHandler(rest.HandlerFunc(handler))
 }
@@ -62,6 +90,10 @@ func main() {
 	db := initDb()
 	ctx = context.WithValue(ctx, "test", "aaabbbccc")
 	ctx = context.WithValue(ctx, "DB", db)
+
+	// redis
+	redis_pool := newPool()
+	ctx = context.WithValue(ctx, "redis", redis_pool)
 
 	str := ctx.Value("test")
 	log.Println(str)
