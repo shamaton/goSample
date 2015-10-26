@@ -7,19 +7,76 @@ import (
 	"github.com/go-xorm/xorm"
 )
 
-var instance *xorm.Engine
+var dbMasterW *xorm.Engine
+var dbMasterR *xorm.Engine
+var dbShardWMap map[int]*xorm.Engine
+var dbShardRMap map[int]*xorm.Engine
 
-func GetInstance() *xorm.Engine {
-	// なければ生成
-	if instance == nil {
-		engine, err := xorm.NewEngine("mysql", "game:game@tcp(localhost:3306)/game_test?charset=utf8")
-		checkErr(err, "sql.Open failed")
+var shardIds = [...]int{1, 2}
 
-		instance = engine
+func BuildInstances() {
+	var err error
 
-		log.Println("instance make!!")
+	// mapは初期化されないので注意
+	dbShardWMap = map[int]*xorm.Engine{}
+	dbShardRMap = map[int]*xorm.Engine{}
+
+	// master
+	dbMasterW, err = xorm.NewEngine("mysql", "game:game@tcp(localhost:3306)/game_master?charset=utf8")
+	checkErr(err, "master instance failed!!")
+	dbShardWMap[1], err = xorm.NewEngine("mysql", "game:game@tcp(localhost:3306)/game_shard_1?charset=utf8")
+	checkErr(err, "shard 1 instance failed!!")
+	dbShardWMap[2], err = xorm.NewEngine("mysql", "game:game@tcp(localhost:3306)/game_shard_2?charset=utf8")
+	checkErr(err, "shard 2 instance failed!!")
+
+	// slave
+	dbMasterR, err = xorm.NewEngine("mysql", "game:game@tcp(localhost:3306)/game_master?charset=utf8")
+	checkErr(err, "master instance failed!!")
+	dbShardRMap[1], err = xorm.NewEngine("mysql", "game:game@tcp(localhost:3306)/game_shard_1?charset=utf8")
+	checkErr(err, "shard 1 instance failed!!")
+	dbShardRMap[2], err = xorm.NewEngine("mysql", "game:game@tcp(localhost:3306)/game_shard_2?charset=utf8")
+	checkErr(err, "shard 2 instance failed!!")
+}
+
+// 仮。これはリクエストキャッシュに持つ。
+var txMap map[int]*xorm.Session
+
+func StartTx() {
+	txMap = map[int]*xorm.Session{}
+	// txのマップを作成
+	for k, v := range dbShardWMap {
+		log.Println(k, " start tx!!")
+		txMap[k] = v.NewSession()
 	}
-	return instance
+	// errを返す
+}
+
+func Commit() {
+	for k, v := range txMap {
+		log.Println(k, " commit!!")
+		/*err :=*/ v.Commit()
+		txMap[k] = nil
+	}
+	// errを返す
+}
+
+func RollBack() {
+	for k, v := range txMap {
+		log.Println(k, " commit!!")
+		/*err :=*/ v.Rollback()
+		txMap[k] = nil
+	}
+	// errを返す
+}
+
+func GetDBShardConnection(shard_type string, value int) *xorm.Engine {
+	shardId := 1
+	return dbShardWMap[shardId]
+}
+
+func GetTxByShardKey(shard_type string, value int) *xorm.Session {
+	shardId := 1
+	return txMap[shardId]
 }
 
 // エラー表示

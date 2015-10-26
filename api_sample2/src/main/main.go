@@ -2,6 +2,7 @@ package main
 
 import (
 	"controller"
+	"hoge"
 	"log"
 	"net/http"
 	"time"
@@ -60,6 +61,9 @@ func main() {
 	// context
 	ctx = context.Background()
 
+	// db
+	hoge.BuildInstances()
+
 	// redis
 	redis_pool := newPool()
 	ctx = context.WithValue(ctx, "redis", redis_pool)
@@ -76,7 +80,10 @@ func main() {
 	}
 
 	api.SetApp(router)
-	log.Fatal(http.ListenAndServe(":9999", api.MakeHandler()))
+	httpErr := http.ListenAndServe(":9999", api.MakeHandler())
+	if httpErr != nil {
+		log.Fatal(err, "http error!!")
+	}
 }
 
 // エラー表示

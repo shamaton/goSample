@@ -25,7 +25,7 @@ var (
 
 func Find(userId int) User {
 	var h *xorm.Engine
-	h = hoge.GetInstance()
+	h = hoge.GetDBShardConnection("user", 1)
 
 	// データをselect
 	var user = User{Id: userId}

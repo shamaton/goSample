@@ -31,28 +31,43 @@ func Test(w rest.ResponseWriter, r *rest.Request) {
 
 	// データをupdate
 	var h *xorm.Engine
-	h = hoge.GetInstance()
+	h = hoge.GetDBShardConnection("user", 1)
 
 	session := h.NewSession()
 	defer session.Close()
 
-	berr := session.Begin()
-	checkErr(berr, "tx error!")
+	var err error
+
+	err = session.Begin()
+	if checkErr(err, "begin error") {
+		w.WriteJson(err)
+		return
+	}
 
 	var u []model.User
-	err := session.Where("id = ?", 3).ForUpdate().Find(&u)
-	checkErr(err, "user not found")
+	err = session.Where("id = ?", 3).ForUpdate().Find(&u)
+	if checkErr(err, "user not found") {
+		w.WriteJson(err)
+		return
+	}
+
 	user := u[0]
 	user.Score += 1
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(6 * time.Second)
 
 	//res, e := session.Id(user.Id).Cols("score").Update(&user) // 単一 PK
-	res, e := session.Id(core.PK{user.Id, user.Name}).Update(&user) // 複合PK
-	log.Println(res)
-	checkErr(e, "update error")
-	ee := session.Commit()
-	checkErr(ee, "commit error!!")
+	_, err = session.Id(core.PK{user.Id, user.Name}).Update(&user) // 複合PK
+	if checkErr(err, "update error") {
+		w.WriteJson(err)
+		return
+	}
+
+	err = session.Commit()
+	if checkErr(err, "commit error") {
+		w.WriteJson(err)
+		return
+	}
 
 	w.WriteJson(user)
 }
@@ -74,8 +89,10 @@ func redisTest(ctx context.Context) {
 }
 
 // エラー表示
-func checkErr(err error, msg string) {
+func checkErr(err error, msg string) bool {
 	if err != nil {
-		log.Fatalln(msg, err)
+		log.Println(msg, err)
+		return true
 	}
+	return false
 }
