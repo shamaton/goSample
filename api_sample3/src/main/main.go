@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
 
+	"github.com/cihub/seelog"
+
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -51,6 +53,7 @@ func Custom() gin.HandlerFunc {
 		c.Set("gContext", ctx)
 
 		// リクエスト前処理
+		seelog.Info("shamoto")
 
 		c.Next()
 
@@ -64,9 +67,22 @@ func Custom() gin.HandlerFunc {
 	}
 }
 
+func loadConfig() {
+	// PJ直下で実装した場合
+	logger, err := seelog.LoggerFromConfigAsFile("./conf/seelog.xml")
+
+	if err != nil {
+		panic("fail to load config")
+	}
+
+	seelog.ReplaceLogger(logger)
+}
+
 func main() {
 	// context
 	ctx = context.Background()
+
+	loadConfig()
 
 	// db
 	hoge.BuildInstances()
@@ -75,7 +91,7 @@ func main() {
 	redis_pool := newPool()
 	ctx = context.WithValue(ctx, "redis", redis_pool)
 
-	router := gin.Default()a
+	router := gin.Default()
 	router.Use(Custom())
 	// make route
 	router.POST("/test", controller.Test)
