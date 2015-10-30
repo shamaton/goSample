@@ -79,7 +79,6 @@ func main() {
 	router.Use(Custom())
 	// make route
 	router.POST("/test", controller.Test)
-	//router.POST("/test", controller.Test)
 
 	err := router.Run(":9999")
 
