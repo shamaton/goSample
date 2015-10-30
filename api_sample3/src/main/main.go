@@ -3,13 +3,12 @@ package main
 import (
 	"controller"
 	"hoge"
-	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
 
-	"github.com/cihub/seelog"
+	log "github.com/cihub/seelog"
 
 	"github.com/garyburd/redigo/redis"
 )
@@ -53,29 +52,29 @@ func Custom() gin.HandlerFunc {
 		c.Set("gContext", ctx)
 
 		// リクエスト前処理
-		seelog.Info("shamoto")
+		defer log.Flush()
 
 		c.Next()
 
 		// リクエスト後処理
 		latency := time.Since(t)
-		log.Print(latency)
+		log.Info(latency)
 
 		// access the status we are sending
 		status := c.Writer.Status()
-		log.Println(status)
+		log.Info(status)
 	}
 }
 
 func loadConfig() {
 	// PJ直下で実装した場合
-	logger, err := seelog.LoggerFromConfigAsFile("./conf/seelog.xml")
+	logger, err := log.LoggerFromConfigAsFile("./conf/seelog/development.xml")
 
 	if err != nil {
 		panic("fail to load config")
 	}
 
-	seelog.ReplaceLogger(logger)
+	log.ReplaceLogger(logger)
 }
 
 func main() {
@@ -100,13 +99,13 @@ func main() {
 
 	// 存在しないルート時
 	if err != nil {
-		log.Fatal(err)
+		log.Critical(err)
 	}
 }
 
 // エラー表示
 func checkErr(err error, msg string) {
 	if err != nil {
-		log.Fatalln(msg, err)
+		log.Error(msg, err)
 	}
 }
