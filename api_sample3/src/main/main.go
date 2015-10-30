@@ -43,30 +43,26 @@ func newPool() *redis.Pool {
 	}
 }
 
-func baseHandlerFunc(handler func(c *gin.Context)) gin.HandlerFunc {
-	return baseHandler(gin.HandlerFunc(handler))
-}
+func Custom() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		t := time.Now()
 
-func baseHandler(handler func(c *gin.Context)) gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
-		// common
-		// log.Println(c)
+		// set global context
 		c.Set("gContext", ctx)
-		handler(c)
-	})
-}
 
-/*
-func SetGontext(c *gin.Context) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.URL, r.Method)
-		c.Set("gContext", ctx)
-		c.
-		h.ServeHTTP(w, r)
+		// リクエスト前処理
+
+		c.Next()
+
+		// リクエスト後処理
+		latency := time.Since(t)
+		log.Print(latency)
+
+		// access the status we are sending
+		status := c.Writer.Status()
+		log.Println(status)
 	}
-	return gin.HandlerFunc(fn)
 }
-*/
 
 func main() {
 	// context
@@ -79,10 +75,10 @@ func main() {
 	redis_pool := newPool()
 	ctx = context.WithValue(ctx, "redis", redis_pool)
 
-	router := gin.Default()
-	//router.Use(SetGontext)
+	router := gin.Default()a
+	router.Use(Custom())
 	// make route
-	router.POST("/test", baseHandlerFunc(controller.Test))
+	router.POST("/test", controller.Test)
 	//router.POST("/test", controller.Test)
 
 	err := router.Run(":9999")
